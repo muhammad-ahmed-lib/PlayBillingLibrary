@@ -57,7 +57,6 @@ class BillingService private constructor(private val context: Context) {
     private var mProductDetailsList = mutableListOf<ProductDetails>()
     private val productNames = mutableListOf<String>()
     private var isBillingConnected = false
-    private var restoreBillingPurchasesListener: BillingPurchaseListener? = null
     private var inAppBillingMessaging: InAppBillingMessaging? = null
     private var billingStateListener: BillingStateListener? = null
     private var mBillingFlowListener: BillingLaunchFlowListener? = null
@@ -113,7 +112,6 @@ class BillingService private constructor(private val context: Context) {
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     isBillingConnected = true
                     billingStateListener?.onConnected(true, billingResult)
-                    restoreBillingPurchases()
                 } else {
                     isBillingConnected = false
                     billingStateListener?.onDisconnected(false, billingResult.responseCode)
@@ -136,9 +134,67 @@ class BillingService private constructor(private val context: Context) {
     /**
      * Checks for existing purchases.
      */
-    fun restorePurchases(listener: BillingPurchaseListener) {
-        restoreBillingPurchasesListener = listener
-        restoreBillingPurchases()
+    fun restoreOneTimeProduct(listener: BillingPurchaseListener) {
+        if (isBillingConnected) {
+            /** Query to recover INAPP
+             * purchases
+             */
+            val queryPurchasesParams = QueryPurchasesParams.newBuilder()
+                .setProductType(BillingClient.ProductType.INAPP)
+                .build()
+            mBillingClient.queryPurchasesAsync(queryPurchasesParams) { billingResult, purchases ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    if (purchases.isNotEmpty()) {
+                        Log.d(TAG, "restoreBillingPurchases: $purchases")
+                        listener.onRestoreBillingFinished(true, purchases)
+                    } else {
+                        Log.d(TAG, "restoreBillingPurchases: not found any purchases")
+                        listener.onRestoreBillingFinished(
+                            false,
+                            mutableListOf()
+                        )
+                    }
+                } else {
+                    listener.onRestoreBillingFailed(billingResult.responseCode)
+                    Log.e(TAG, "Failed to query purchases: ${billingResult.responseCode}")
+                }
+            }
+        } else {
+            listener.onRestoreBillingFailed(BillingClient.BillingResponseCode.SERVICE_DISCONNECTED)
+        }
+    }
+
+    /**
+     * Checks for existing subscriptions.
+     */
+    fun restoreSubscription(listener: BillingPurchaseListener) {
+        if (isBillingConnected) {
+            /** Query to recover SUBS
+             * purchases
+             */
+            val queryPurchasesParams = QueryPurchasesParams.newBuilder()
+                .setProductType(BillingClient.ProductType.SUBS)
+                .build()
+            mBillingClient.queryPurchasesAsync(queryPurchasesParams) { billingResult, purchases ->
+                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    if (purchases.isNotEmpty()) {
+                        Log.d(TAG, "restoreSubscription: $purchases")
+                        listener.onRestoreBillingFinished(true, purchases)
+                    } else {
+                        Log.d(TAG, "restoreSubscription: not found any purchases")
+                        listener.onRestoreBillingFinished(
+                            false,
+                            mutableListOf()
+                        )
+                    }
+                } else {
+                    listener.onRestoreBillingFailed(billingResult.responseCode)
+                    Log.e(TAG, "Failed to query purchases: ${billingResult.responseCode}")
+                }
+            }
+        } else {
+            listener.onRestoreBillingFailed(BillingClient.BillingResponseCode.SERVICE_DISCONNECTED)
+        }
     }
 
     /**
@@ -203,58 +259,7 @@ class BillingService private constructor(private val context: Context) {
             )
         }
     }
-
-    /**
-     * Restores purchases for INAPP products.
-     */
-    private fun restoreBillingPurchases() {
-        if (isBillingConnected) {
-            /** Query to recover INAPP
-             * purchases
-             */
-            val queryPurchasesParams = QueryPurchasesParams.newBuilder()
-                .setProductType(BillingClient.ProductType.INAPP)
-                .build()
-            mBillingClient.queryPurchasesAsync(queryPurchasesParams) { billingResult, purchases ->
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    if (purchases.isNotEmpty()) {
-                        Log.d(TAG, "restoreBillingPurchases: $purchases")
-                        restoreBillingPurchasesListener?.onRestoreBillingFinished(true, purchases)
-                    } else {
-                        Log.d(TAG, "restoreBillingPurchases: not found any purchases")
-                        restoreBillingPurchasesListener?.onRestoreBillingFinished(
-                            false,
-                            mutableListOf()
-                        )
-                    }
-                } else {
-                    restoreBillingPurchasesListener?.onRestoreBillingFailed(billingResult.responseCode)
-                    Log.e(TAG, "Failed to query purchases: ${billingResult.responseCode}")
-                }
-            }
-            /** Query to recover SUBS**/
-            val querySubParams = QueryPurchasesParams.newBuilder()
-                .setProductType(BillingClient.ProductType.SUBS)
-                .build()
-            mBillingClient.queryPurchasesAsync(querySubParams) { billingResult, purchases ->
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    if (purchases.isNotEmpty()) {
-                        Log.d(TAG, "restoreBillingPurchases: $purchases")
-                        restoreBillingPurchasesListener?.onRestoreBillingFinished(true, purchases)
-                    } else {
-                        Log.d(TAG, "restoreBillingPurchases: not found any purchases")
-                        restoreBillingPurchasesListener?.onRestoreBillingFinished(false, mutableListOf())
-                    }
-                } else {
-                    restoreBillingPurchasesListener?.onRestoreBillingFailed(billingResult.responseCode)
-                    Log.e(TAG, "Failed to query purchases: ${billingResult.responseCode}")
-                }
-            }
-        } else {
-            restoreBillingPurchasesListener?.onRestoreBillingFailed(BillingClient.BillingResponseCode.SERVICE_DISCONNECTED)
-        }
-    }
-
+    
     /**
      * Initiates the purchase flow for an INAPP product.
      */

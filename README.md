@@ -33,7 +33,9 @@ Copy code
 
 dependencies {
 
-    implementation 'com.github.muhammad-ahmed-lib:PlayBillingLibrary:beta-1.0'
+Latest version <1.0.6>
+
+    implementation 'com.github.muhammad-ahmed-lib:PlayBillingLibrary:1.0.6'
     
 }
 
@@ -177,21 +179,36 @@ private fun subscribeProduct() {
 5. Restore Purchases
 To restore previous purchases:
 
-kotlin
 Copy code
 
-private fun restoreSubscription() {
-    billingService.restorePurchases(object : BillingPurchaseListener {
-        override fun onRestoreBillingFinished(isAppPurchased: Boolean, productDetails: MutableList<Purchase>) {
-            Log.d(TAG, "onRestoreBillingFinished: $isAppPurchased")
-            Log.d(TAG, "onRestoreBillingFinished: $productDetails")
-        }
+mBillingService.restoreSubscription(object :BillingPurchaseListener{
+          
+           override fun onRestoreBillingFinished(
+               isAppPurchased: Boolean,
+               productDetails: MutableList<Purchase>
+           ) {
+               
+           }
 
-        override fun onRestoreBillingFailed(billingError: Int) {
-            Log.d(TAG, "onRestoreBillingFailed: $billingError")
-        }
-    })
-}
+           override fun onRestoreBillingFailed(billingError: Int) {
+
+           }
+
+       })
+       
+        mBillingService.restoreOneTimeProduct(object :BillingPurchaseListener{
+            override fun onRestoreBillingFinished(
+                isAppPurchased: Boolean,
+                productDetails: MutableList<Purchase>
+            ) {
+
+            }
+
+            override fun onRestoreBillingFailed(billingError: Int) {
+
+            }
+
+        })
 
 6. Enable In-App Messaging
 To enable in-app messaging related to billing:

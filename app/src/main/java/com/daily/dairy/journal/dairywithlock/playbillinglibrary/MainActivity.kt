@@ -202,17 +202,29 @@ class MainActivity : AppCompatActivity() {
         })
     }
     private fun restoreSubscription(){
-        mBillingService.restorePurchases(object :BillingPurchaseListener{
+       mBillingService.restoreSubscription(object :BillingPurchaseListener{
+           override fun onRestoreBillingFinished(
+               isAppPurchased: Boolean,
+               productDetails: MutableList<Purchase>
+           ) {
+
+           }
+
+           override fun onRestoreBillingFailed(billingError: Int) {
+
+           }
+
+       })
+        mBillingService.restoreOneTimeProduct(object :BillingPurchaseListener{
             override fun onRestoreBillingFinished(
                 isAppPurchased: Boolean,
                 productDetails: MutableList<Purchase>
             ) {
-                Log.d(TAG, "onRestoreBillingFinished: $isAppPurchased")
-                Log.d(TAG, "onRestoreBillingFinished: $productDetails")
+
             }
 
             override fun onRestoreBillingFailed(billingError: Int) {
-                Log.d(TAG, "onRestoreBillingFailed: $billingError")
+
             }
 
         })

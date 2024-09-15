@@ -217,7 +217,9 @@ kotlin
 Copy code
 
 private fun enableInAppMessaging() {
+    
     billingService.enableInAppMessaging(this, object : InAppBillingMessaging {
+        
         override fun onNoActionNeeded(inAppMessageResult: InAppMessageResult) {
             Log.d(TAG, "onNoActionNeeded: $inAppMessageResult")
         }

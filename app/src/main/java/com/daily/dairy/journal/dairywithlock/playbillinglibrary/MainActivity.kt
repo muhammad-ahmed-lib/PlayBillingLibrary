@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity() {
     }
     private fun subscribeProduct(){
         //Product Purchase
-        mBillingService.purchaseSubscriptionProduct(this,
+        mBillingService.purchaseSubscription(this,
             "lifeTime",object:BillingLaunchFlowListener{
                 override fun onBillingFailed(error: String, responseCode: Int) {
                     Log.d(TAG, "onBillingFailed: $error")
@@ -120,7 +120,7 @@ class MainActivity : AppCompatActivity() {
     }
     private fun purchaseProduct(){
         //Product Purchase
-        mBillingService.purchaseInAppProduct(this,
+        mBillingService.purchaseOneTimeProduct(this,
             "lifeTime",object:BillingLaunchFlowListener{
                 override fun onBillingFailed(error: String, responseCode: Int) {
                     Log.d(TAG, "onBillingFailed: $error")
@@ -174,7 +174,7 @@ class MainActivity : AppCompatActivity() {
     }
     private fun getProductsDetails(){
         //products
-        mBillingService.getProductDetails(listOf("lifetime"),object:BillingProductDetailsListener{
+        mBillingService.getOneTimeProductDetails("lifetime",object:BillingProductDetailsListener{
             override fun onProductDetailsRetrieved(
                 billingResult: BillingResult,
                 productDetails: List<ProductDetails>
@@ -198,7 +198,6 @@ class MainActivity : AppCompatActivity() {
             override fun onProductDetailsRetrievalFailed(errorCode: Int, errorMessage: String) {
                 Log.d(TAG, "onProductDetailsRetrievalFailed: $errorMessage")
             }
-
         })
     }
     private fun restoreSubscription(){
@@ -215,7 +214,7 @@ class MainActivity : AppCompatActivity() {
            }
 
        })
-        mBillingService.restoreOneTimeProduct(object :BillingPurchaseListener{
+        mBillingService.restoreInAppPurchases(object :BillingPurchaseListener{
             override fun onRestoreBillingFinished(
                 isAppPurchased: Boolean,
                 productDetails: MutableList<Purchase>

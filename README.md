@@ -1,241 +1,172 @@
-Play Billing Library
+Play Billing Library Integration
 
-The Play Billing Library is an Android library designed to simplify the management of in-app purchases and subscriptions in your Android application. 
-This library includes robust features like purchase handling, subscription management, in-app messaging, and more.
+Version: 1.0.7
 
-Note: This is a beta version of the Play Billing Library. We appreciate any feedback you have. Please send your feedback to ahmed03160636141@gmail.com.
+
+This library simplifies the process of integrating Google Play Billing into your Android applications, supporting both in-app purchases and subscriptions.
 
 Features
-In-App Purchases: Handle one-time in-app purchases seamlessly.
-Subscriptions: Manage recurring subscriptions with ease.
-In-App Messaging: Enable and manage in-app messaging for billing-related notifications.
-Restore Purchases: Restore previous purchases and subscriptions.
-Billing Flow: Simplified and managed billing flow with detailed callbacks.
-Getting Started
-1. Add the Dependency
-Add the following to your settings.gradle file:
+
+In-App Purchases (One-Time Products): Easily handle the purchase of consumable and non-consumable products.
+
+Subscription Management: Manage subscriptions with flexible billing periods (weekly, monthly, yearly).
+
+Product Restoration: Restore previously purchased products and subscriptions.
+
+In-App Messaging: Enable in-app messaging for subscription status updates and other in-app billing interactions.
+
+Installation
+
+Add the following dependency to your project-level build.gradle:
+
+gradle
 
 Copy code
 
-dependencyResolutionManagement {
+	maven { url 'https://jitpack.io' }
+implementation 'com.daily.dairy.journal.dairywithlock.playbillinglibrary:1.0.7'
 
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    repositories {
-        mavenCentral()
-        maven { url 'https://jitpack.io' }
-    }
-    
-}
+Setup
 
-Then, add the dependency to your build.gradle (Module: app) file:
+Initialize Billing Service
+
+In your MainActivity, initialize the BillingService in the onCreate method:
 
 Copy code
 
-dependencies {
-
-Latest version <1.0.6>
-
-    implementation 'com.github.muhammad-ahmed-lib:PlayBillingLibrary:1.0.6'
-    
+private val mBillingService by lazy {
+  
+    BillingService.getInstance(this)
 }
 
-2. Initialize the Library
-In your Application class or the main Activity, initialize the BillingService:
+override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    binding = ActivityMainBinding.inflate(layoutInflater)
+    setContentView(binding.root)
 
-kotlin
-Copy code
+    // Initialize the Billing Service
+    mBillingService.initializeBilling(object : BillingStateListener {
+        override fun onConnected(isConnected: Boolean, billingResult: BillingResult) {
+            // Call methods once billing is connected
+            restoreSubscription()
+            getProductsDetails()
+            purchaseProduct()
+            subscribeProduct()
+            enableInAppMessaging()
+        }
 
-import com.daily.dairy.journal.dairywithlock.playbillinglibrary.BillingService
-import com.daily.dairy.journal.dairywithlock.playbillinglibrary.BillingStateListener
-import com.android.billingclient.api.BillingResult
-
-class MyApp : Application() {
-
-    override fun onCreate() {
-        super.onCreate()
-
-        // Initialize BillingService
-        val billingService = BillingService.getInstance(this)
-        billingService.initializeBilling(object : BillingStateListener {
-            override fun onConnected(isConnected: Boolean, billingResult: BillingResult) {
-                // Handle billing connected state
-            }
-
-            override fun onDisconnected(isConnected: Boolean, responseCode: Int) {
-                // Handle billing disconnected state
-            }
-        })
-    }
+        override fun onDisconnected(isConnected: Boolean, responseCode: Int) {
+            Log.d(TAG, "onDisconnected: $responseCode")
+        }
+    })
 }
 
-3. Retrieve Product Details
-To retrieve details for both in-app purchases and subscriptions:
+Retrieve Product Details
 
-kotlin
+Fetch the details of one-time products and subscription plans:
+
 Copy code
 
 private fun getProductsDetails() {
-    // Retrieve in-app product details
-    billingService.getProductDetails(listOf("lifetime"), object : BillingProductDetailsListener {
+   
+    mBillingService.getOneTimeProductDetails("lifetime", object : BillingProductDetailsListener {
+      
         override fun onProductDetailsRetrieved(billingResult: BillingResult, productDetails: List<ProductDetails>) {
-            Log.d(TAG, "onProductDetailsRetrieved: $productDetails")
+            Log.d(TAG, "One-time Product Details: $productDetails")
         }
 
         override fun onProductDetailsRetrievalFailed(errorCode: Int, errorMessage: String) {
-            Log.d(TAG, "onProductDetailsRetrievalFailed: $errorMessage")
+            Log.e(TAG, "Failed to retrieve product details: $errorMessage")
         }
     })
 
-    // Retrieve subscription product details
-    billingService.getSubscriptionDetails(listOf("weekly", "monthly"), object : BillingProductDetailsListener {
+    mBillingService.getSubscriptionDetails(listOf("weekly", "monthly"), object : BillingProductDetailsListener {
+      
         override fun onProductDetailsRetrieved(billingResult: BillingResult, productDetails: List<ProductDetails>) {
-            Log.d(TAG, "onProductDetailsRetrieved: $productDetails")
+            Log.d(TAG, "Subscription Details: $productDetails")
         }
 
         override fun onProductDetailsRetrievalFailed(errorCode: Int, errorMessage: String) {
-            Log.d(TAG, "onProductDetailsRetrievalFailed: $errorMessage")
+            Log.e(TAG, "Failed to retrieve subscription details: $errorMessage")
         }
     })
 }
 
-4. Launch the Billing Flow
-To initiate the billing flow for both in-app purchases and subscriptions:
+Handle Purchases
 
-kotlin
+Purchase a one-time product or a subscription:
+
 Copy code
+// Purchase a one-time product
 
 private fun purchaseProduct() {
-    billingService.purchaseInAppProduct(this, "lifetime", object : BillingLaunchFlowListener {
+   
+    mBillingService.purchaseOneTimeProduct(this, "lifeTime", object : BillingLaunchFlowListener {
         override fun onBillingFailed(error: String, responseCode: Int) {
-            Log.d(TAG, "onBillingFailed: $error")
-        }
-
-        override fun onBillingInitiatedSuccessfully(status: String, billingResult: BillingResult) {
-            Log.d(TAG, "onBillingInitiatedSuccessfully: $status")
-        }
-
-        override fun onBillingCanceled(status: String, billingResult: BillingResult) {
-            Log.d(TAG, "onBillingCanceled: $status")
-        }
-
-        override fun onBillingItemAlreadyOwned(status: String, billingResult: BillingResult) {
-            Log.d(TAG, "onBillingItemAlreadyOwned: $status")
+            Log.e(TAG, "Purchase failed: $error")
         }
 
         override fun onProductPurchasedSuccessfully(billingResult: BillingResult, purchases: List<Purchase>?) {
-            Log.d(TAG, "onProductPurchasedSuccessfully: $purchases")
-        }
-
-        override fun onProductPurchasePending(billingResult: BillingResult, purchases: List<Purchase>?) {
-            Log.d(TAG, "onProductPurchasePending: $purchases")
-        }
-
-        override fun onProductUnspecified(billingResult: BillingResult, purchases: List<Purchase>?) {
-            Log.d(TAG, "onProductUnspecified: $purchases")
-        }
-
-        override fun onProductFailedToPurchase(billingResult: BillingResult) {
-            Log.d(TAG, "onProductFailedToPurchase: $billingResult")
+            Log.d(TAG, "Product purchased: $purchases")
         }
     })
 }
 
+// Purchase a subscription
 private fun subscribeProduct() {
-    billingService.purchaseSubscriptionProduct(this, "weekly", object : BillingLaunchFlowListener {
-        override fun onBillingFailed(error: String, responseCode: Int) {
-            Log.d(TAG, "onBillingFailed: $error")
-        }
-
-        override fun onBillingInitiatedSuccessfully(status: String, billingResult: BillingResult) {
-            Log.d(TAG, "onBillingInitiatedSuccessfully: $status")
-        }
-
-        override fun onBillingCanceled(status: String, billingResult: BillingResult) {
-            Log.d(TAG, "onBillingCanceled: $status")
-        }
-
-        override fun onBillingItemAlreadyOwned(status: String, billingResult: BillingResult) {
-            Log.d(TAG, "onBillingItemAlreadyOwned: $status")
-        }
-
+   
+   mBillingService.purchaseSubscription(this, "monthly", object : BillingLaunchFlowListener {
+      
         override fun onProductPurchasedSuccessfully(billingResult: BillingResult, purchases: List<Purchase>?) {
-            Log.d(TAG, "onProductPurchasedSuccessfully: $purchases")
+            Log.d(TAG, "Subscription purchased: $purchases")
+        }
+    })
+}
+Restore Purchases
+
+Restore previous in-app purchases or subscriptions:
+
+
+Copy code
+
+private fun restoreSubscription() {
+  
+    mBillingService.restoreSubscription(object : BillingPurchaseListener {
+     
+        override fun onRestoreBillingFinished(isAppPurchased: Boolean, productDetails: MutableList<Purchase>) {
+            Log.d(TAG, "Restored subscription: $productDetails")
         }
 
-        override fun onProductPurchasePending(billingResult: BillingResult, purchases: List<Purchase>?) {
-            Log.d(TAG, "onProductPurchasePending: $purchases")
-        }
-
-        override fun onProductUnspecified(billingResult: BillingResult, purchases: List<Purchase>?) {
-            Log.d(TAG, "onProductUnspecified: $purchases")
-        }
-
-        override fun onProductFailedToPurchase(billingResult: BillingResult) {
-            Log.d(TAG, "onProductFailedToPurchase: $billingResult")
+        override fun onRestoreBillingFailed(billingError: Int) {
+            Log.e(TAG, "Failed to restore subscriptions")
         }
     })
 }
 
-5. Restore Purchases
-To restore previous purchases:
+Enable In-App Messaging
+
+Activate in-app messaging for subscription updates:
+
 
 Copy code
-
-mBillingService.restoreSubscription(object :BillingPurchaseListener{
-          
-           override fun onRestoreBillingFinished(
-               isAppPurchased: Boolean,
-               productDetails: MutableList<Purchase>
-           ) {
-               
-           }
-
-           override fun onRestoreBillingFailed(billingError: Int) {
-
-           }
-
-       })
-       
-        mBillingService.restoreOneTimeProduct(object :BillingPurchaseListener{
-            override fun onRestoreBillingFinished(
-                isAppPurchased: Boolean,
-                productDetails: MutableList<Purchase>
-            ) {
-
-            }
-
-            override fun onRestoreBillingFailed(billingError: Int) {
-
-            }
-
-        })
-
-6. Enable In-App Messaging
-To enable in-app messaging related to billing:
-
-kotlin
-Copy code
-
 private fun enableInAppMessaging() {
-    
-    billingService.enableInAppMessaging(this, object : InAppBillingMessaging {
-        
-        override fun onNoActionNeeded(inAppMessageResult: InAppMessageResult) {
-            Log.d(TAG, "onNoActionNeeded: $inAppMessageResult")
-        }
-
+  
+    mBillingService.enableInAppMessaging(this, object : InAppBillingMessaging {
+     
         override fun onSubscriptionStatusUpdated(inAppMessageResult: InAppMessageResult) {
-            Log.d(TAG, "onSubscriptionStatusUpdated: $inAppMessageResult")
-        }
-
-        override fun onFailedToReceiveMessages(error: Int) {
-            Log.d(TAG, "onFailedToReceiveMessages: $error")
+            Log.d(TAG, "Subscription status updated: $inAppMessageResult")
         }
     })
 }
-
-Feedback
-As this is a beta version, we welcome your feedback to help us improve the library. Please send your feedback to ahmed03160636141@gmail.com.
 
 License
-This project is licensed under the MIT License - see the LICENSE file for details.
+
+This library is available for use under the MIT License.
+
+For feedback, issues, or feature requests, feel free to contact:
+
+Muhammad Ahmed
+
+Email: ahmed03160636141@gmail.com
+
+WhatsApp: +923091370220

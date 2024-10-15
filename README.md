@@ -26,9 +26,8 @@ Copy code
 	maven { url 'https://jitpack.io' }
 
 
-	dependencies {	        
-implementation 'com.github.muhammad-ahmed-lib:PlayBillingLibrary:1.0.7'
-	}
+	implementation'com.github.muhammad-ahmed-lib:PlayBillingLibrary:1.0.7'
+	
 
 Setup
 

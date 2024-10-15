@@ -24,7 +24,11 @@ gradle
 Copy code
 
 	maven { url 'https://jitpack.io' }
-implementation 'com.daily.dairy.journal.dairywithlock.playbillinglibrary:1.0.7'
+
+
+	dependencies {	        
+implementation 'com.github.muhammad-ahmed-lib:PlayBillingLibrary:1.0.7'
+	}
 
 Setup
 

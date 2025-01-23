@@ -1,11 +1,11 @@
-Play Billing Library Integration
+# Play Billing Library Integration
 
-Version: 1.0.7
+## Version: 1.0.7
 
 
 This library simplifies the process of integrating Google Play Billing into your Android applications, supporting both in-app purchases and subscriptions.
 
-Features
+## Features
 
 In-App Purchases (One-Time Products): Easily handle the purchase of consumable and non-consumable products.
 
@@ -15,7 +15,7 @@ Product Restoration: Restore previously purchased products and subscriptions.
 
 In-App Messaging: Enable in-app messaging for subscription status updates and other in-app billing interactions.
 
-Installation
+## Installation
 
 Add the following dependency to your project-level build.gradle:
 
@@ -29,9 +29,9 @@ Copy code
 	implementation'com.github.muhammad-ahmed-lib:PlayBillingLibrary:1.0.7'
 	
 
-Setup
+## Setup
 
-Initialize Billing Service
+### Initialize Billing Service
 
 In your MainActivity, initialize the BillingService in the onCreate method:
 
@@ -64,7 +64,7 @@ override fun onCreate(savedInstanceState: Bundle?) {
     })
 }
 
-Retrieve Product Details
+### Retrieve Product Details
 
 Fetch the details of one-time products and subscription plans:
 
@@ -100,7 +100,7 @@ Handle Purchases
 Purchase a one-time product or a subscription:
 
 Copy code
-// Purchase a one-time product
+### Purchase a one-time product
 
 private fun purchaseProduct() {
    
@@ -115,7 +115,7 @@ private fun purchaseProduct() {
     })
 }
 
-// Purchase a subscription
+### Purchase a subscription
 private fun subscribeProduct() {
    
    mBillingService.purchaseSubscription(this, "monthly", object : BillingLaunchFlowListener {
@@ -125,7 +125,7 @@ private fun subscribeProduct() {
         }
     })
 }
-Restore Purchases
+#### Restore Purchases
 
 Restore previous in-app purchases or subscriptions:
 
@@ -146,7 +146,7 @@ private fun restoreSubscription() {
     })
 }
 
-Enable In-App Messaging
+### Enable In-App Messaging
 
 Activate in-app messaging for subscription updates:
 
@@ -168,8 +168,8 @@ This library is available for use under the MIT License.
 
 For feedback, issues, or feature requests, feel free to contact:
 
-Muhammad Ahmed
+### Muhammad Ahmed
 
-Email: ahmed03160636141@gmail.com
+### Email: ahmed03160636141@gmail.com
 
-WhatsApp: +923091370220
+### WhatsApp: +923091370220

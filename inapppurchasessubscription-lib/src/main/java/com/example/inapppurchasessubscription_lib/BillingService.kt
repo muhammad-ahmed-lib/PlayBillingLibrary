@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.util.Log
+import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
@@ -128,7 +129,32 @@ class BillingService private constructor(private val context: Context) {
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     if (purchases.isNotEmpty()) {
                         Log.d(TAG, "restoreSubscription: $purchases")
-                        listener.onRestoreBillingFinished(true, purchases)
+
+                        // Check for unacknowledged purchases and acknowledge them
+                        val unacknowledged = purchases.filter {
+                            it.purchaseState == Purchase.PurchaseState.PURCHASED && !it.isAcknowledged
+                        }
+
+                        if (unacknowledged.isNotEmpty()) {
+                            acknowledgePurchases(unacknowledged, object : BulkAcknowledgeListener {
+                                override fun onBulkAcknowledgeComplete(results: List<AcknowledgeResult>) {
+                                    val failedAcknowledges = results.filter { !it.success }
+                                    if (failedAcknowledges.isEmpty()) {
+                                        Log.d(TAG, "All restored purchases acknowledged successfully")
+                                    } else {
+                                        Log.e(TAG, "Some purchases failed acknowledgment: $failedAcknowledges")
+                                    }
+                                    listener.onRestoreBillingFinished(true, purchases)
+                                }
+
+                                override fun onAllAlreadyAcknowledged() {
+                                    listener.onRestoreBillingFinished(true, purchases)
+                                }
+                            })
+                        } else {
+                            listener.onRestoreBillingFinished(true, purchases)
+                        }
+
                     } else {
                         Log.d(TAG, "restoreSubscription: not found any purchases")
                         listener.onRestoreBillingFinished(false, mutableListOf())
@@ -356,14 +382,100 @@ class BillingService private constructor(private val context: Context) {
             listener.onFailedToReceiveMessages(BillingResponseCode.SERVICE_DISCONNECTED.code)
         }
     }
+    fun acknowledgePurchase(purchase: Purchase, listener: AcknowledgePurchaseListener) {
+        if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
+            if (!purchase.isAcknowledged) {
+                val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder()
+                    .setPurchaseToken(purchase.purchaseToken)
+                    .build()
+
+                mBillingClient.acknowledgePurchase(acknowledgePurchaseParams) { billingResult ->
+                    if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                        Log.d(TAG, "Purchase acknowledged successfully: ${purchase.orderId}")
+                        listener.onAcknowledgeSuccess(purchase)
+                    } else {
+                        Log.e(TAG, "Failed to acknowledge purchase: ${billingResult.debugMessage}")
+                        listener.onAcknowledgeFailed(billingResult.responseCode, billingResult.debugMessage)
+                    }
+                }
+            } else {
+                Log.d(TAG, "Purchase already acknowledged: ${purchase.orderId}")
+                listener.onAlreadyAcknowledged(purchase)
+            }
+        } else {
+            Log.e(TAG, "Cannot acknowledge non-purchased item")
+            listener.onAcknowledgeFailed(-1, "Cannot acknowledge non-purchased item")
+        }
+    }
+
+    fun acknowledgePurchases(purchases: List<Purchase>, listener: BulkAcknowledgeListener) {
+        val unacknowledgedPurchases = purchases.filter {
+            it.purchaseState == Purchase.PurchaseState.PURCHASED && !it.isAcknowledged
+        }
+
+        if (unacknowledgedPurchases.isEmpty()) {
+            listener.onAllAlreadyAcknowledged()
+            return
+        }
+
+        val results = mutableListOf<AcknowledgeResult>()
+        var completedCount = 0
+
+        unacknowledgedPurchases.forEach { purchase ->
+            acknowledgePurchase(purchase, object : AcknowledgePurchaseListener {
+                override fun onAcknowledgeSuccess(purchase: Purchase) {
+                    results.add(AcknowledgeResult(purchase, true, "Success"))
+                    completedCount++
+                    if (completedCount == unacknowledgedPurchases.size) {
+                        listener.onBulkAcknowledgeComplete(results)
+                    }
+                }
+
+                override fun onAcknowledgeFailed(errorCode: Int, errorMessage: String) {
+                    results.add(AcknowledgeResult(purchase, false, errorMessage))
+                    completedCount++
+                    if (completedCount == unacknowledgedPurchases.size) {
+                        listener.onBulkAcknowledgeComplete(results)
+                    }
+                }
+
+                override fun onAlreadyAcknowledged(purchase: Purchase) {
+                    results.add(AcknowledgeResult(purchase, true, "Already acknowledged"))
+                    completedCount++
+                    if (completedCount == unacknowledgedPurchases.size) {
+                        listener.onBulkAcknowledgeComplete(results)
+                    }
+                }
+            })
+        }
+    }
+
+    // Update the handlePurchases method to automatically acknowledge purchases
     private fun handlePurchases(billingResult: BillingResult, purchases: List<Purchase>?) {
         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
             for (purchase in purchases) {
                 // Handle the purchase
                 if (purchase.purchaseState == Purchase.PurchaseState.PURCHASED) {
-                    // Grant entitlement to the user
-                    Log.d(TAG, "Purchase successful: ${purchase.orderId}")
-                    mBillingFlowListener?.onProductPurchasedSuccessfully(billingResult, purchases)
+                    // Acknowledge the purchase first
+                    acknowledgePurchase(purchase, object : AcknowledgePurchaseListener {
+                        override fun onAcknowledgeSuccess(purchase: Purchase) {
+                            // Grant entitlement to the user after acknowledgment
+                            Log.d(TAG, "Purchase acknowledged and completed: ${purchase.orderId}")
+                            mBillingFlowListener?.onProductPurchasedSuccessfully(billingResult, listOf(purchase))
+                        }
+
+                        override fun onAcknowledgeFailed(errorCode: Int, errorMessage: String) {
+                            Log.e(TAG, "Purchase succeeded but acknowledgment failed: $errorMessage")
+                            mBillingFlowListener?.onProductPurchasedSuccessfully(billingResult, listOf(purchase))
+                            // You might want to retry acknowledgment here
+                        }
+
+                        override fun onAlreadyAcknowledged(purchase: Purchase) {
+                            Log.d(TAG, "Purchase already acknowledged: ${purchase.orderId}")
+                            mBillingFlowListener?.onProductPurchasedSuccessfully(billingResult, listOf(purchase))
+                        }
+                    })
+
                 } else if (purchase.purchaseState == Purchase.PurchaseState.PENDING) {
                     Log.d(TAG, "Purchase pending: ${purchase.orderId}")
                     mBillingFlowListener?.onProductPurchasePending(billingResult, purchases)

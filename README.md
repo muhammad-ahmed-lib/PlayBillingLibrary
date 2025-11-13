@@ -1,6 +1,6 @@
 # Play Billing Library Integration
 
-## Version: 1.0.7
+## Version: 1.0.8
 
 This library simplifies the process of integrating Google Play Billing into your Android
 applications, supporting both in-app purchases and subscriptions.
@@ -24,12 +24,11 @@ Add the following dependency to your project-level build.gradle:
 
 gradle
 
-Copy code
 
 	maven { url 'https://jitpack.io' }
 
 
-	implementation'com.github.muhammad-ahmed-lib:PlayBillingLibrary:1.0.7'
+	implementation'com.github.muhammad-ahmed-lib:PlayBillingLibrary:1.0.8'
 
 ## Setup
 
@@ -37,7 +36,6 @@ Copy code
 
 In your MainActivity, initialize the BillingService in the onCreate method:
 
-Copy code
 
 private val mBillingService by lazy {
 
@@ -72,7 +70,6 @@ setContentView(binding.root)
 
 Fetch the details of one-time products and subscription plans:
 
-Copy code
 
 private fun getProductsDetails() {
 
@@ -104,7 +101,6 @@ Handle Purchases
 
 Purchase a one-time product or a subscription:
 
-Copy code
 
 ### Purchase a one-time product
 
@@ -139,7 +135,6 @@ mBillingService.purchaseSubscription(this, "monthly", object : BillingLaunchFlow
 
 Restore previous in-app purchases or subscriptions:
 
-Copy code
 
 private fun restoreSubscription(){
 mBillingService.restoreSubscription(object: BillingPurchaseListener{
@@ -204,3 +199,4 @@ For feedback, issues, or feature requests, feel free to contact:
 ### Email: ahmed03160636141@gmail.com
 
 ### WhatsApp: +923091370220
+
